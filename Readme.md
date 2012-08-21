@@ -1,0 +1,1 @@
+scalarion  [![Build Status](https://secure.travis-ci.org/chentepixtol/scalarion.png?branch=master)](http://travis-ci.org/chentepixtol/scalarion)
