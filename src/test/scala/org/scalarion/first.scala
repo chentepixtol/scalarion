@@ -7,85 +7,78 @@ import org.scalarion.Criterion
 class FirstTest extends FunSuite {
    
   test("equal"){
-    expect("`username` = 'chentepixtol'"){'username equal "chentepixtol" toSql }
-    expect("`username` = {username}"){'username equal "chentepixtol" toPrepareSql }
-    expect(List('username -> "chentepixtol")){'username equal "chentepixtol" getParams }
+    val criterion = 'username equal "chentepixtol"
+    expect("`username` = 'chentepixtol'"){ criterion.toSql }
+    expect("`username` = {username}"){ criterion.toPrepareSql }
+    expect(List('username -> "chentepixtol")){ criterion.getParams }
   }
   
   test("or"){
+    val criterion = ('username equal "chentepixtol") or ('username equal "vicentemmor")
     expect("( `username` = 'chentepixtol' OR `username` = 'vicentemmor' )"){
-      ('username equal "chentepixtol") or ('username equal "vicentemmor") toSql 
+      criterion.toSql 
     }
-    
     expect("( `username` = {username} OR `username` = {username} )"){
-      ('username equal "chentepixtol") or ('username equal "vicentemmor") toPrepareSql 
+      criterion.toPrepareSql 
     }
-    
     expect(List('username -> "chentepixtol", 'username -> "vicentemmor")){
-      ('username equal "chentepixtol") or ('username equal "vicentemmor") getParams 
+      criterion.getParams 
     }
   }
   
   test("and"){
-    
+    val criterion = ('username equal "chentepixtol") and ('username equal "vicentemmor")
     expect("( `username` = 'chentepixtol' AND `username` = 'vicentemmor' )"){
-      ('username equal "chentepixtol") and ('username equal "vicentemmor") toSql 
+      criterion.toSql 
     }
-    
     expect("( `username` = {username} AND `username` = {username} )"){
-      ('username equal "chentepixtol") and ('username equal "vicentemmor") toPrepareSql 
+      criterion.toPrepareSql 
     }
-    
     expect(List('username -> "chentepixtol", 'username -> "vicentemmor")){
-      ('username equal "chentepixtol") and ('username equal "vicentemmor") getParams 
+      criterion.getParams 
     }
   }
   
   test("complex"){
     val complex = ( 'username.equal("chentepixtol") and 'username.equal("vicentemmor") ) or 'email.equal("yahoo")
-    
     expect("( ( `username` = 'chentepixtol' AND `username` = 'vicentemmor' ) OR `email` = 'yahoo' )"){  
       complex.toSql
     }
-    
     expect("( ( `username` = {username} AND `username` = {username} ) OR `email` = {email} )"){
       complex.toPrepareSql
     }
-    
     expect(List('username -> "chentepixtol", 'username -> "vicentemmor", 'email -> "yahoo")){
       complex.getParams
     }
   }
   
-  test(" in "){
+  test(" in with Int "){
+    val criterion = 'user_id.in(Seq(1,2,3))
     expect("""`user_id` IN ("1","2","3")"""){
-      'user_id.in(Seq(1,2,3)) toSql
+      criterion.toSql
     }
-    
     expect(List('user_id -> Seq(1,2,3))){
-      'user_id.in(Seq(1,2,3)) getParams
+      criterion.getParams
     }
-    
+  }
+
+  test("in with string"){
+    val criterion = 'lettres.in(Seq("a","b","c","d","e"))
     expect("""`lettres` IN ("a","b","c","d","e")"""){
-      'lettres.in(Seq("a","b","c","d","e")) toSql
+      criterion.toSql
     }
-    
     expect(List('lettres -> Seq("a","b","c","d","e"))){
-      'lettres.in(Seq("a","b","c","d","e")) getParams
+      criterion.getParams
     }
   }
   
-  test("mutator"){
+  test("mutators"){
+    val criterion = 'id_user.sum.equal(100)
     expect("SUM(`id_user`) = 100"){
-      'id_user.mutator("SUM").equal(100) toSql
+      criterion.toSql
     }
-    
-    expect("SUM(`id_user`) = 100"){
-      'id_user.sum.equal(100) toSql
-    }
-    
     expect(List('id_user -> 100)){
-      'id_user.sum.equal(100) getParams
+      criterion.getParams
     } 
   }
   
