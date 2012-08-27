@@ -57,7 +57,10 @@ class FirstTest extends FunSuite {
     expect("""`user_id` IN ("1","2","3")"""){
       criterion.toSql
     }
-    expect(List('user_id -> Seq(1,2,3))){
+    expect("""`user_id` IN ({user_id0},{user_id1},{user_id2})"""){
+      criterion.toPrepareSql
+    }
+    expect( List('user_id0 -> 1, 'user_id1 -> 2,'user_id2 -> 3) ){
       criterion.getParams
     }
   }
@@ -67,15 +70,21 @@ class FirstTest extends FunSuite {
     expect("""`lettres` IN ("a","b","c","d","e")"""){
       criterion.toSql
     }
-    expect(List('lettres -> Seq("a","b","c","d","e"))){
-      criterion.getParams
+    expect("""`lettres` IN ({lettres0},{lettres1},{lettres2},{lettres3},{lettres4})"""){
+      criterion.toPrepareSql
     }
+    expect( List('lettres0 -> "a", 'lettres1 -> "b",'lettres2 -> "c", 'lettres3 -> "d", 'lettres4 -> "e") ){
+      criterion.getParams
+    } 
   }
   
   test("mutators"){
     val criterion = 'id_user.sum.equal(100)
     expect("SUM(`id_user`) = 100"){
       criterion.toSql
+    }
+    expect("SUM(`id_user`) = {id_user}"){
+      criterion.toPrepareSql
     }
     expect(List('id_user -> 100)){
       criterion.getParams
@@ -91,6 +100,9 @@ class FirstTest extends FunSuite {
       "Other" -> None
     )
     val query = Criterion(filters)
+    expect("( ( `username` = {username} AND `age` = {age} ) AND `mail` = {mail} )"){
+      query.toPrepareSql
+    }
     expect(List('username -> "chentepixtol", 'age -> 26, 'mail -> "yahoo")){
       query.getParams
     }

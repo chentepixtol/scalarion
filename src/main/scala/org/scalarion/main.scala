@@ -22,14 +22,14 @@ class Field(sym: Symbol) extends FirstTerm{
 
 class Mutator(functionName: String, field: Field) extends FirstTerm{
   def toSql = functionName + "(" + field.toSql + ")";
-  def toPrepareSql = functionName + "( "+ field.toPrepareSql +" )"
+  def toPrepareSql = field.toPrepareSql
   def symbol = field.symbol
 }
 
 class ConditionalCriterion(firstTerm: FirstTerm, comparator: Comparator, value: Any) extends Criterion{
   def toSql = firstTerm.toSql + " " + comparator.toSql(value)
-  def toPrepareSql = firstTerm.toSql + " " + comparator.toPrepareSql(firstTerm)
-  def getParams = List(firstTerm.symbol -> value )
+  def toPrepareSql = firstTerm.toSql + " " + comparator.toPrepareSql(firstTerm, value)
+  def getParams = comparator.getParams(firstTerm, value)
 }
 
 abstract class Criterion{
@@ -81,7 +81,8 @@ class AndCriterion(c1: Criterion, c2: Criterion) extends Criterion{
 
 abstract class Comparator(val symbol: String){
   def toSql(value: Any): String
-  def toPrepareSql(firstTerm: FirstTerm): String
+  def toPrepareSql(firstTerm: FirstTerm, value: Any): String
+  def getParams(firstTerm: FirstTerm, value: Any): List[(Symbol, Any)] = List(firstTerm.symbol -> value )
 }
 
 class EqualCmp extends Comparator("="){
@@ -89,14 +90,31 @@ class EqualCmp extends Comparator("="){
     case i: Int => symbol + " " + i
     case _ => symbol + " '" + value.toString() + "'"  
   } 
-  def toPrepareSql(firstTerm: FirstTerm) = symbol + " " + firstTerm.toPrepareSql 
+  def toPrepareSql(firstTerm: FirstTerm, value: Any) = symbol + " " + firstTerm.toPrepareSql 
 }
 
 class InCmp extends Comparator("IN"){
+  
   def toSql(value: Any) = symbol + " " + (value match {
     case s: Seq[_] => "(" + s.map("\""+_.toString()+"\"").mkString(",") + ")"
     case other => other.toString() 
   })
   
-  def toPrepareSql(firstTerm: FirstTerm) = symbol + " (" + firstTerm.toPrepareSql + ")"
+  def toPrepareSql(firstTerm: FirstTerm, value: Any) = value match {
+    case params: Seq[_] => {
+      var fieldName = firstTerm.symbol.toString.drop(1)
+      val paramsList = for ( i <- 0 until params.size ) yield ( fieldName + i) 
+      symbol + " ({%s})".format(paramsList.mkString("},{")) 
+    }
+    case _ => throw new Exception("No implemented")
+  }
+
+  override def getParams(firstTerm: FirstTerm, value: Any): List[(Symbol, Any)] = value match {
+    case params: Seq[_] => {
+      var fieldName = firstTerm.symbol.toString.drop(1)
+      val paramsList = for ( i <- 0 until params.size ) yield ( Symbol(fieldName + i)) 
+      paramsList.zip(params).toList
+    }
+    case _ => throw new Exception("No implemented")
+  }
 }
